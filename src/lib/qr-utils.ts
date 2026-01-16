@@ -14,6 +14,7 @@ export const generateNonce = (): string => {
 };
 
 // Generate QR code data with embedded one-time token (nonce)
+// Now returns a complete URL for direct scanning
 export const generateQRData = (sessionId: string, facultyId: string, classId: string): string => {
   const nonce = generateNonce(); // One-time use token
   const timestamp = Date.now();
@@ -28,7 +29,10 @@ export const generateQRData = (sessionId: string, facultyId: string, classId: st
     expiresAt,
   };
   
-  return btoa(JSON.stringify(data));
+  // Return complete URL for direct scanning
+  const baseUrl = window.location.origin;
+  const encodedData = btoa(JSON.stringify(data));
+  return `${baseUrl}/scan?data=${encodeURIComponent(encodedData)}`;
 };
 
 // Parse QR code data

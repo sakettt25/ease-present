@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { VerificationForm } from "@/components/student/VerificationForm";
 import { ArrowLeft, ScanLine, Camera, AlertTriangle, CheckCircle } from "lucide-react";
 import { parseQRData } from "@/lib/qr-utils";
+import { getSession } from "@/lib/session-manager";
 
 const ScanAttendance = () => {
   const navigate = useNavigate();
@@ -21,24 +22,37 @@ const ScanAttendance = () => {
     }
   }, [searchParams]);
 
-  const handleQRData = (data: string) => {
+  const handleQRData = async (data: string) => {
     try {
-      // Parse QR data from actual scan
+      // Parse QR data from actual scan or URL parameter
       let qrDetails: any;
       let location: any = null;
       let section: string = "";
       
       console.log('Raw QR data received:', data);
       
+      // First try to decode as base64 (from URL parameter)
       try {
-        const parsed = JSON.parse(data);
-        console.log('Parsed as JSON:', parsed);
-        qrDetails = parseQRData(parsed.qr);
-        location = parsed.location;
-        section = parsed.section;
+        const decoded = atob(data);
+        const parsed = JSON.parse(decoded);
+        console.log('Parsed from base64:', parsed);
+        qrDetails = {
+          ...parsed,
+          nonce: parsed.nonce || parsed.token,
+        };
+
+        // Fetch session from backend to get location
+        if (qrDetails.sessionId) {
+          const session = await getSession(qrDetails.sessionId);
+          if (session) {
+            location = session.location;
+            section = session.section || "";
+            console.log('Fetched session location:', location);
+          }
+        }
       } catch {
-        // If JSON parsing fails, try direct parsing (for new enhanced format)
-        console.log('JSON parse failed, trying direct parsing');
+        // Fallback to old format with pipe-separated values
+        console.log('Base64 parse failed, trying pipe-separated format');
         const parts = data.split('|');
         console.log('Split parts:', parts);
         if (parts.length >= 3) {

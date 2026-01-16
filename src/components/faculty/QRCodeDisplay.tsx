@@ -55,17 +55,16 @@ export const QRCodeDisplay = ({
         return;
       }
 
+      // Generate complete URL with QR data
       const qrDataValue = generateQRData(sessionId, "faculty_001", classId);
-      const locationData = facultyLocation ? `${facultyLocation.lat},${facultyLocation.lng}` : 'NO_LOCATION';
-      const enhancedData = `${qrDataValue}|${section}|${locationData}`;
-      setQRData(enhancedData);
+      setQRData(qrDataValue);
       setTimeLeft(120);
       setNonceCount(prev => prev + 1); // Increment nonce counter
       onSessionUpdate?.(sessionId);
     } catch (error) {
       console.error('Error generating QR code:', error);
     }
-  }, [sessionId, classId, facultyLocation, section, onSessionUpdate]);
+  }, [sessionId, classId, onSessionUpdate]);
 
   useEffect(() => {
     refreshQRCode();
