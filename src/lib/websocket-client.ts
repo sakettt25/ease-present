@@ -3,7 +3,7 @@ import { io, Socket } from 'socket.io-client';
 
 let socket: Socket | null = null;
 
-const SOCKET_SERVER = 'http://localhost:3001';
+const SOCKET_SERVER = import.meta.env.VITE_API_BASE?.replace('/api', '') || 'https://ease-present.onrender.com';
 
 export interface AttendanceUpdate {
   sessionId: string;
