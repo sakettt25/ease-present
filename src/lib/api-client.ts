@@ -1,6 +1,7 @@
 // API client for communicating with the backend server
 
-const API_BASE = 'http://localhost:3001/api';
+// Use environment variable for API base, fallback to localhost for development
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001/api';
 
 export interface CreateSessionRequest {
   sessionId: string;

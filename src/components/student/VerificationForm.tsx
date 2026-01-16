@@ -78,31 +78,54 @@ export const VerificationForm = ({ qrData, onSuccess }: VerificationFormProps) =
       // Step 4: Check location
       setLocationStatus("checking");
       
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0,
+      let studentLocation: { latitude: number; longitude: number } | null = null;
+      
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0,
+          });
         });
-      });
 
-      setLocationStatus("granted");
-      setVerificationProgress(prev => ({ ...prev, location: true }));
+        studentLocation = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        };
+        
+        setLocationStatus("granted");
+        setVerificationProgress(prev => ({ ...prev, location: true }));
 
-      // Validate location distance (50m radius)
-      if (qrData.location) {
-        const distance = calculateDistance(
-          position.coords.latitude,
-          position.coords.longitude,
-          qrData.location.lat,
-          qrData.location.lng
-        );
+        // Validate location distance (50m radius) - only if faculty location is available
+        if (qrData.location && studentLocation) {
+          const distance = calculateDistance(
+            studentLocation.latitude,
+            studentLocation.longitude,
+            qrData.location.lat,
+            qrData.location.lng
+          );
 
-        if (distance > 50) {
-          setError(`You are ${Math.round(distance)}m away from the class. Must be within 50m to mark attendance.`);
+          console.log(`Distance from class: ${distance}m (Faculty: ${qrData.location.lat}, ${qrData.location.lng})`);
+
+          if (distance > 50) {
+            setError(`You are ${Math.round(distance)}m away from the class. Must be within 50m to mark attendance.`);
+            setStep("error");
+            return;
+          }
+        }
+      } catch (locationError: any) {
+        console.warn('Location error:', locationError);
+        // Allow submission even without location, but warn user
+        if (locationError.code === 1) {
+          // User denied permission
+          setError("Location permission is required to mark attendance.");
           setStep("error");
           return;
         }
+        // For other errors (timeout, etc), continue with null location
+        setLocationStatus("granted");
+        setVerificationProgress(prev => ({ ...prev, location: true }));
       }
 
       setStep("verifying");
@@ -134,10 +157,10 @@ export const VerificationForm = ({ qrData, onSuccess }: VerificationFormProps) =
           qrData.sessionId,
           student!.rollNumber,
           ip,
-          {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          },
+          studentLocation ? {
+            lat: studentLocation.latitude,
+            lng: studentLocation.longitude,
+          } : undefined,
           qrData.nonce // Pass the nonce to backend
         );
       }
@@ -148,9 +171,9 @@ export const VerificationForm = ({ qrData, onSuccess }: VerificationFormProps) =
         onSuccess({ rollNumber: student!.rollNumber, name: student!.name });
       }, 2000);
 
-    } catch (err) {
-      setLocationStatus("denied");
-      setError("Location access is required to mark attendance. Please enable location services and try again.");
+    } catch (err: any) {
+      console.error('Verification error:', err);
+      setError(err.message || "An error occurred during verification. Please try again.");
       setStep("error");
     }
   };

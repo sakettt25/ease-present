@@ -5,9 +5,27 @@ import cors from 'cors';
 
 const app = express();
 const httpServer = createServer(app);
+
+// Determine allowed origins based on environment
+const getAllowedOrigins = () => {
+  const origins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:8081',
+    'https://ease-present.vercel.app',
+  ];
+  
+  // Add any custom origins from environment variable
+  if (process.env.ALLOWED_ORIGINS) {
+    origins.push(...process.env.ALLOWED_ORIGINS.split(','));
+  }
+  
+  return origins;
+};
+
 const io = new SocketIOServer(httpServer, {
   cors: {
-    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    origin: getAllowedOrigins(),
     methods: ['GET', 'POST'],
   },
 });
