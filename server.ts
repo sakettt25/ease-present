@@ -2,9 +2,20 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
+import fs from 'fs';
+import path from 'path';
 
 const app = express();
 const httpServer = createServer(app);
+
+// File-based storage for persistence
+const DATA_DIR = process.env.DATA_DIR || './data';
+const SESSIONS_FILE = path.join(DATA_DIR, 'sessions.json');
+
+// Ensure data directory exists
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
 
 // Determine allowed origins based on environment
 const getAllowedOrigins = () => {
@@ -63,6 +74,35 @@ interface DeviceSubmission {
 const activeSessions = new Map<string, SessionData>();
 const deviceSubmissions = new Map<string, DeviceSubmission>();
 
+// Load sessions from file on startup
+const loadSessions = () => {
+  try {
+    if (fs.existsSync(SESSIONS_FILE)) {
+      const data = fs.readFileSync(SESSIONS_FILE, 'utf-8');
+      const sessions = JSON.parse(data);
+      Object.entries(sessions).forEach(([key, value]: [string, any]) => {
+        activeSessions.set(key, value);
+      });
+      console.log(`✅ Loaded ${activeSessions.size} sessions from disk`);
+    }
+  } catch (err) {
+    console.error('Failed to load sessions:', err);
+  }
+};
+
+// Save sessions to file
+const saveSessions = () => {
+  try {
+    const sessionsObj = Object.fromEntries(activeSessions);
+    fs.writeFileSync(SESSIONS_FILE, JSON.stringify(sessionsObj, null, 2));
+  } catch (err) {
+    console.error('Failed to save sessions:', err);
+  }
+};
+
+// Load existing sessions on startup
+loadSessions();
+
 // REST API Endpoints
 
 /**
@@ -88,6 +128,7 @@ app.post('/api/sessions', (req, res) => {
   };
 
   activeSessions.set(sessionId, sessionData);
+  saveSessions(); // Persist to disk
   console.log(`[API] Created session: ${sessionId}`);
 
   // Broadcast session created event to all connected clients
@@ -190,6 +231,8 @@ app.post('/api/submissions', (req, res) => {
     location,
   });
 
+  saveSessions(); // Persist to disk
+
   console.log(
     `[API] Submission recorded for session ${sessionId}, roll ${rollNumber}, total devices: ${session.attendedDevices.length}`
   );
@@ -239,6 +282,7 @@ app.post('/api/sessions/:sessionId/end', (req, res) => {
   }
 
   session.isActive = false;
+  saveSessions(); // Persist to disk
   console.log(`[API] Ended session: ${sessionId}`);
 
   io.emit('session:ended', { sessionId });
