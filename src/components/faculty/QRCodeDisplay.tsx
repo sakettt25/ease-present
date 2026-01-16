@@ -27,12 +27,18 @@ export const QRCodeDisplay = ({
 }: QRCodeDisplayProps) => {
   const [sessionId] = useState(() => {
     const id = generateSessionId();
-    // Create session in session manager
-    createSession(id, "faculty_001", classId, section, facultyLocation);
-    // Notify parent when session is created
-    onSessionCreated?.(id);
+    // Create session in session manager (async but not awaited here)
+    createSession(id, "faculty_001", classId, section, facultyLocation).catch(err => {
+      console.error('Failed to create session:', err);
+    });
     return id;
   });
+
+  // Notify parent of sessionId after initial render
+  useEffect(() => {
+    onSessionCreated?.(sessionId);
+  }, [sessionId, onSessionCreated]);
+
   const [qrData, setQRData] = useState<string>(() => {
     return generateQRData(sessionId, "faculty_001", classId);
   });
@@ -101,13 +107,6 @@ export const QRCodeDisplay = ({
       console.error('Failed to copy:', err);
     }
   };
-
-  // Cleanup: end session when component unmounts
-  useEffect(() => {
-    return () => {
-      endSession(sessionId);
-    };
-  }, [sessionId]);
 
   return (
     <div className="flex flex-col items-center">

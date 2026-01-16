@@ -45,6 +45,8 @@ export const VerificationForm = ({ qrData, onSuccess }: VerificationFormProps) =
     e.preventDefault();
     setError("");
 
+    console.log('QR Data received:', qrData);
+
     if (!rollNumber.trim() || !name.trim()) {
       setError("Please fill in all fields");
       return;
@@ -60,7 +62,7 @@ export const VerificationForm = ({ qrData, onSuccess }: VerificationFormProps) =
 
       // Check device restrictions first
       if (qrData.sessionId) {
-        const deviceCheck = canDeviceSubmit(fingerprint, qrData.sessionId);
+        const deviceCheck = await canDeviceSubmit(fingerprint, qrData.sessionId);
         if (!deviceCheck.allowed) {
           setError(deviceCheck.reason || "Device is not allowed to submit.");
           setStep("error");
@@ -117,14 +119,17 @@ export const VerificationForm = ({ qrData, onSuccess }: VerificationFormProps) =
       setVerificationProgress(prev => ({ ...prev, student: true }));
 
       // Mark nonce as used (only after all checks pass, right before success)
+      console.log('Before nonce check, qrData:', qrData);
       if (qrData.sessionId && qrData.nonce) {
-        validateNonce(qrData.sessionId, qrData.nonce);
+        await validateNonce(qrData.sessionId, qrData.nonce);
         setVerificationProgress(prev => ({ ...prev, nonce: true }));
       }
 
       // Record the device submission with all details
+      console.log('Before recording submission, qrData.sessionId:', qrData.sessionId);
       if (qrData.sessionId) {
-        recordDeviceSubmission(
+        console.log('Recording device submission for session:', qrData.sessionId, 'roll:', student!.rollNumber);
+        await recordDeviceSubmission(
           fingerprint,
           qrData.sessionId,
           student!.rollNumber,
@@ -132,7 +137,8 @@ export const VerificationForm = ({ qrData, onSuccess }: VerificationFormProps) =
           {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
-          }
+          },
+          qrData.nonce // Pass the nonce to backend
         );
       }
 

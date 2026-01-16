@@ -139,7 +139,7 @@ export const getClientIPAddress = async (): Promise<string> => {
 export const checkNonce = (sessionId: string, nonce: string): boolean => {
   const session = getSession(sessionId);
   if (!session) return false;
-  return !session.usedTokens.has(nonce);
+  return !session.usedTokens.includes(nonce);
 };
 
 // Validate nonce usage (one-time token validation) - only call after all checks pass

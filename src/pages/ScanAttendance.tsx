@@ -28,14 +28,19 @@ const ScanAttendance = () => {
       let location: any = null;
       let section: string = "";
       
+      console.log('Raw QR data received:', data);
+      
       try {
         const parsed = JSON.parse(data);
+        console.log('Parsed as JSON:', parsed);
         qrDetails = parseQRData(parsed.qr);
         location = parsed.location;
         section = parsed.section;
       } catch {
         // If JSON parsing fails, try direct parsing (for new enhanced format)
+        console.log('JSON parse failed, trying direct parsing');
         const parts = data.split('|');
+        console.log('Split parts:', parts);
         if (parts.length >= 3) {
           qrDetails = parseQRData(parts[0]);
           section = parts[1];
@@ -47,6 +52,8 @@ const ScanAttendance = () => {
           qrDetails = parseQRData(data);
         }
       }
+      
+      console.log('Parsed QR details:', qrDetails);
       
       if (!qrDetails) {
         setError("Invalid QR code. Please try again.");
@@ -64,6 +71,13 @@ const ScanAttendance = () => {
         location,
         section,
       });
+      
+      console.log('Final QR data set to state:', {
+        ...qrDetails,
+        location,
+        section,
+      });
+      
       setScanStep("verify");
       setError("");
     } catch (err) {

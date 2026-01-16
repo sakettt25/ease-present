@@ -79,21 +79,32 @@ const FacultyDashboard = () => {
   };
 
   // Poll for attendance updates from session manager
-  const pollAttendanceUpdates = () => {
-    if (!sessionId) return;
+  const pollAttendanceUpdates = async () => {
+    if (!sessionId) {
+      console.log('No sessionId yet');
+      return;
+    }
 
-    const devices = getSessionDevices(sessionId);
+    const devices = await getSessionDevices(sessionId);
+    console.log('Polling session:', sessionId, 'Devices found:', devices.length, devices);
+    
+    if (devices.length === 0) return;
+
     setAttendanceRecords((prev) => {
       const updated = [...prev];
       devices.forEach((device) => {
         const index = updated.findIndex((r) => r.rollNumber === device.rollNumber && r.status === "Absent");
+        console.log(`Looking for ${device.rollNumber}, found at index ${index}`);
         if (index !== -1) {
           updated[index] = {
             ...updated[index],
             status: "Present" as const,
             timestamp: device.timestamp,
             deviceId: device.deviceFingerprint,
+            ipAddress: device.ipAddress,
+            location: device.location,
           };
+          console.log(`Updated ${device.rollNumber} to Present`);
         }
       });
       return updated;
