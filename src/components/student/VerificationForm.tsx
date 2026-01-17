@@ -4,8 +4,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CheckCircle, Loader2, MapPin, Smartphone, AlertTriangle, Shield } from "lucide-react";
 import { verifyStudent } from "@/lib/mock-data";
-import { calculateDistance, generateDeviceFingerprint, getClientIPAddress, validateNonce } from "@/lib/qr-utils";
-import { validateAttendanceSubmission, recordDeviceSubmission, canDeviceSubmit } from "@/lib/session-manager";
+import { 
+  calculateDistance, 
+  generateDeviceFingerprint, 
+  getClientIPAddress, 
+  validateNonce,
+  storeDeviceFingerprint,
+  getStoredFingerprint,
+  detectFingerprintAnomaly,
+  calculateFingerprintEntropy,
+} from "@/lib/qr-utils";
+import { recordDeviceSubmission, canDeviceSubmit } from "@/lib/session-manager";
 
 interface VerificationFormProps {
   qrData: {
@@ -19,6 +28,13 @@ interface VerificationFormProps {
 
 type VerificationStep = "form" | "checking" | "verifying" | "success" | "error";
 
+// Helper function to get entropy color
+const getEntropyColor = (entropy: number): string => {
+  if (entropy > 75) return 'bg-green-400';
+  if (entropy > 50) return 'bg-blue-400';
+  return 'bg-yellow-400';
+};
+
 export const VerificationForm = ({ qrData, onSuccess }: VerificationFormProps) => {
   const [rollNumber, setRollNumber] = useState("");
   const [name, setName] = useState("");
@@ -27,6 +43,8 @@ export const VerificationForm = ({ qrData, onSuccess }: VerificationFormProps) =
   const [locationStatus, setLocationStatus] = useState<"pending" | "granted" | "denied" | "checking">("pending");
   const [deviceFingerprint, setDeviceFingerprint] = useState("");
   const [ipAddress, setIpAddress] = useState("");
+  const [fingerprintEntropy, setFingerprintEntropy] = useState(0);
+  const [anomalyDetected, setAnomalyDetected] = useState(false);
   const [verificationProgress, setVerificationProgress] = useState<{
     device: boolean;
     ip: boolean;
@@ -44,6 +62,7 @@ export const VerificationForm = ({ qrData, onSuccess }: VerificationFormProps) =
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setAnomalyDetected(false);
 
     console.log('QR Data received:', qrData);
 
@@ -55,9 +74,30 @@ export const VerificationForm = ({ qrData, onSuccess }: VerificationFormProps) =
     setStep("checking");
 
     try {
-      // Step 1: Generate device fingerprint
+      // Step 1: Generate enhanced device fingerprint
       const fingerprint = generateDeviceFingerprint();
       setDeviceFingerprint(fingerprint);
+      
+      // Calculate entropy score for this device
+      const entropy = calculateFingerprintEntropy();
+      setFingerprintEntropy(entropy);
+      
+      // Check for anomalies (potential spoofing)
+      const storedFP = getStoredFingerprint();
+      if (storedFP) {
+        const timeDiff = (Date.now() - storedFP.timestamp) / (1000 * 60); // minutes
+        const anomaly = detectFingerprintAnomaly(fingerprint, storedFP.fingerprint, timeDiff);
+        
+        if (anomaly.isAnomaly && anomaly.severity === 'high') {
+          setAnomalyDetected(true);
+          setError("Device fingerprint anomaly detected. Please try again.");
+          setStep("error");
+          return;
+        }
+      }
+      
+      // Store the new fingerprint metadata
+      storeDeviceFingerprint(fingerprint);
       setVerificationProgress(prev => ({ ...prev, device: true }));
 
       // Check device restrictions first
@@ -238,6 +278,23 @@ export const VerificationForm = ({ qrData, onSuccess }: VerificationFormProps) =
                 <p className="text-xs text-muted-foreground font-mono">
                   {deviceFingerprint || "Generating..."}
                 </p>
+                {fingerprintEntropy > 0 && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="w-12 h-1.5 bg-secondary rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all ${getEntropyColor(fingerprintEntropy)}`}
+                        style={{ width: `${fingerprintEntropy}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground">Entropy: {fingerprintEntropy}%</span>
+                  </div>
+                )}
+                {anomalyDetected && (
+                  <div className="flex items-center gap-1 mt-1 text-xs text-red-400">
+                    <AlertTriangle className="w-3 h-3" />
+                    Anomaly detected
+                  </div>
+                )}
               </div>
             </div>
 
