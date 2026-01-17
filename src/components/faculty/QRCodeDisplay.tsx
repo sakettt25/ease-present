@@ -159,7 +159,7 @@ export const QRCodeDisplay = ({
       </div>
 
       {/* QR Data Display for Testing */}
-      <div className="mt-4 p-3 bg-secondary/30 rounded-lg max-w-2xl text-center">
+      {/* <div className="mt-4 p-3 bg-secondary/30 rounded-lg max-w-2xl text-center">
         <p className="text-xs text-muted-foreground mb-2">🧪 QR Data (Testing):</p>
         <div className="flex gap-2 items-center">
           <code className="text-xs font-mono text-foreground break-all bg-secondary/50 p-2 rounded flex-1">
@@ -187,22 +187,22 @@ export const QRCodeDisplay = ({
             )}
           </button>
         </div>
-      </div>
+      </div> */}
 
       {/* Class Info */}
-      <div className="mt-6 text-center">
+      {/* <div className="mt-6 text-center">
         <h3 className="font-display text-xl font-semibold text-foreground">{className}</h3>
         <p className="text-muted-foreground text-sm">Section {section}</p>
-      </div>
+      </div> */}
 
       {/* QR Data Display for Testing */}
-      <div className="mt-4 p-3 bg-secondary/30 rounded-lg max-w-2xl text-center">
+      {/* <div className="mt-4 p-3 bg-secondary/30 rounded-lg max-w-2xl text-center">
         <p className="text-xs text-muted-foreground mb-2">🧪 QR Data (Testing):</p>
         <code className="text-xs font-mono text-foreground break-all bg-secondary/50 p-2 rounded block">
           {qrData?.substring(0, 100)}
           {qrData && qrData.length > 100 ? "..." : ""}
         </code>
-      </div>
+      </div> */}
 
       {/* Stats */}
       <div className="flex gap-6 mt-6">
