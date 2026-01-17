@@ -47,13 +47,13 @@ const features = [
 
 export const FeaturesSection = () => {
   return (
-    <section className="py-24 bg-background">
+    <section className="py-24 bg-black">
       <div className="container px-4">
         <div className="text-center mb-16">
-          <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
+          <h2 className="font-display text-3xl md:text-4xl font-bold text-white mb-4">
             Comprehensive Anti-Fraud System
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg text-gray-400 max-w-2xl mx-auto">
             Multiple layers of verification ensure genuine attendance tracking
           </p>
         </div>
@@ -62,18 +62,23 @@ export const FeaturesSection = () => {
           {features.map((feature, index) => (
             <div
               key={feature.title}
-              className="group p-6 bg-card rounded-2xl border border-border hover:border-accent/30 hover-lift cursor-default"
+              className="group relative p-6 bg-gray-900/50 backdrop-blur-sm rounded-2xl border border-gray-800 hover:border-blue-500/40 hover-lift cursor-default overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              <div className={`w-12 h-12 rounded-xl ${feature.bgColor} flex items-center justify-center mb-4 transition-transform group-hover:scale-110`}>
-                <feature.icon className={`w-6 h-6 ${feature.color}`} />
+              {/* Gradient overlay on hover */}
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+              
+              <div className="relative">
+                <div className={`w-14 h-14 rounded-2xl ${feature.bgColor} flex items-center justify-center mb-5 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-sm backdrop-blur-sm`}>
+                  <feature.icon className={`w-7 h-7 ${feature.color}`} />
+                </div>
+                <h3 className="font-display text-xl font-semibold text-white mb-3 group-hover:text-blue-400 transition-colors">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-400 text-sm leading-relaxed">
+                  {feature.description}
+                </p>
               </div>
-              <h3 className="font-display text-lg font-semibold text-foreground mb-2">
-                {feature.title}
-              </h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                {feature.description}
-              </p>
             </div>
           ))}
         </div>
